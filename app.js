@@ -7,7 +7,7 @@ module.exports = function(esClient){
      * @param callback
      */
     esClient.deleteByQuery = function(options, callback){
-        var dataToDelete = [];
+        var dataToDeleteCount = 0;
 
         var defaultOptions = {
             scroll: '30s',
@@ -23,11 +23,11 @@ module.exports = function(esClient){
                 return;
             }
 
-            dataToDelete = _.union(dataToDelete, response.hits.hits);
+            dataToDeleteCount = dataToDeleteCount + response.hits.hits.length;
 
             //If there are no results, return
             if(response.hits.total == 0){
-                callback.apply(null, [null, { status: 'OK', elements: dataToDelete }]);
+                callback.apply(null, [null, { status: 'OK', count: dataToDeleteCount }]);
                 return;
             }
 
@@ -52,18 +52,18 @@ module.exports = function(esClient){
                     return;
                 }
 
-                if (response.hits.total !== dataToDelete.length) {
+                if (response.hits.total !== dataToDeleteCount) {
                     esClient.scroll({
                         scrollId: response._scroll_id,
                         scroll: '30s'
                     }, getMoreUntilDone);
                 } else {
-                    if(_.isEmpty(dataToDelete)){
-                        callback.apply(null, [null, { status: 'OK', elements: [] }]);
+                    if(dataToDeleteCount === 0){
+                        callback.apply(null, [null, { status: 'OK', count: dataToDeleteCount }]);
                         return;
                     }
 
-                    callback.apply(null, [null, { status: 'OK', elements: dataToDelete }]);
+                    callback.apply(null, [null, { status: 'OK', count: dataToDeleteCount }]);
                 }
             });
         });
